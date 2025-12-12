@@ -261,78 +261,194 @@ class ZenParserGUI:
             self.parse_button.config(state=tk.NORMAL)
     
     def extract_article_text(self, soup):
-        """Extract article text from the parsed HTML"""
+        """Extract article text from the parsed HTML - only the main article content"""
         article_parts = []
         
-        # Try multiple selectors for Yandex Zen content
-        # Zen uses different structures, so we try various approaches
+        # Remove unwanted elements from the entire soup first
+        for tag in soup.find_all(['script', 'style', 'noscript', 'iframe', 'form']):
+            tag.decompose()
         
-        # Method 1: Look for article tag
+        # Remove common non-article sections
+        for selector in ['nav', 'header', 'footer', 'aside', 'menu']:
+            for element in soup.find_all(selector):
+                element.decompose()
+        
+        # Remove elements with common class patterns for navigation, ads, comments
+        noise_patterns = [
+            'navigation', 'nav', 'menu', 'sidebar', 'aside', 'footer', 'header',
+            'comment', 'social', 'share', 'advertisement', 'ad-', 'promo',
+            'related', 'recommend', 'popular', 'trending', 'subscribe',
+            'cookie', 'banner', 'popup', 'modal'
+        ]
+        
+        for pattern in noise_patterns:
+            for element in soup.find_all(class_=re.compile(pattern, re.I)):
+                element.decompose()
+            for element in soup.find_all(id=re.compile(pattern, re.I)):
+                element.decompose()
+        
+        # Method 1: Try JSON-LD structured data first (most accurate)
+        json_ld_scripts = soup.find_all('script', type='application/ld+json')
+        for json_ld in json_ld_scripts:
+            try:
+                import json
+                data = json.loads(json_ld.string)
+                
+                # Handle both single objects and arrays
+                if isinstance(data, list):
+                    for item in data:
+                        if isinstance(item, dict) and item.get('@type') in ['Article', 'NewsArticle', 'BlogPosting']:
+                            data = item
+                            break
+                
+                if isinstance(data, dict) and data.get('@type') in ['Article', 'NewsArticle', 'BlogPosting']:
+                    # Extract headline/title
+                    if 'headline' in data:
+                        article_parts.append(data['headline'])
+                        article_parts.append('\n\n')
+                    
+                    # Extract article body
+                    if 'articleBody' in data and len(data['articleBody']) > 100:
+                        article_parts.append(data['articleBody'])
+                        return self.clean_text(''.join(article_parts))
+            except:
+                pass
+        
+        # Method 2: Look for article tag with specific content extraction
         article = soup.find('article')
         if article:
-            # Remove script and style tags
-            for tag in article.find_all(['script', 'style', 'noscript']):
-                tag.decompose()
+            # Clone the article to avoid modifying the original
+            article_copy = article
             
-            # Extract title
-            title = article.find(['h1', 'h2'])
+            # Remove nested articles (like "related articles")
+            for nested in article_copy.find_all('article'):
+                if nested != article_copy:
+                    nested.decompose()
+            
+            # Extract title from h1 or h2
+            title = article_copy.find(['h1', 'h2'])
             if title:
                 article_parts.append(title.get_text(strip=True))
                 article_parts.append('\n\n')
+                title.decompose()  # Remove to avoid duplication
             
-            # Extract paragraphs
-            paragraphs = article.find_all('p')
-            for p in paragraphs:
-                text = p.get_text(strip=True)
-                if text and len(text) > 20:  # Filter out very short paragraphs
-                    article_parts.append(text)
-                    article_parts.append('\n\n')
-        
-        # Method 2: Look for specific Zen classes/divs
-        if not article_parts:
-            # Try to find content by common class names
-            content_divs = soup.find_all('div', class_=re.compile(r'(article|content|text|post)'))
-            for div in content_divs:
-                for tag in div.find_all(['script', 'style', 'noscript']):
-                    tag.decompose()
+            # Extract only paragraphs and headings (core content)
+            for element in article_copy.find_all(['p', 'h3', 'h4', 'h5', 'h6']):
+                # Check if the element is not inside a removed section
+                text = element.get_text(strip=True)
                 
-                text = div.get_text(strip=True)
-                if len(text) > 100:  # Only consider substantial content
-                    article_parts.append(text)
-                    break
+                # Filter out short or suspicious content
+                if text and len(text) > 15:
+                    # Skip if it looks like a UI element or navigation
+                    if not self.is_noise_text(text):
+                        article_parts.append(text)
+                        article_parts.append('\n\n')
         
-        # Method 3: Try JSON-LD structured data
+        # Method 3: Look for specific Zen content containers
         if not article_parts:
-            json_ld = soup.find('script', type='application/ld+json')
-            if json_ld:
+            # Zen-specific selectors (more precise than generic divs)
+            zen_selectors = [
+                'div[class*="article-render"]',
+                'div[class*="article__text"]',
+                'div[class*="article-body"]',
+                'div[class*="post-content"]',
+                'div[class*="entry-content"]',
+                'main article',
+                'main[role="main"]'
+            ]
+            
+            for selector in zen_selectors:
                 try:
-                    import json
-                    data = json.loads(json_ld.string)
-                    if isinstance(data, dict):
-                        if 'articleBody' in data:
-                            article_parts.append(data['articleBody'])
-                        elif 'description' in data:
-                            article_parts.append(data['description'])
+                    content = soup.select_one(selector)
+                    if content:
+                        # Extract title
+                        title = content.find(['h1', 'h2'])
+                        if title:
+                            article_parts.append(title.get_text(strip=True))
+                            article_parts.append('\n\n')
+                            title.decompose()
+                        
+                        # Extract paragraphs
+                        for p in content.find_all('p'):
+                            text = p.get_text(strip=True)
+                            if text and len(text) > 15 and not self.is_noise_text(text):
+                                article_parts.append(text)
+                                article_parts.append('\n\n')
+                        
+                        if article_parts:
+                            break
                 except:
-                    pass
+                    continue
         
-        # Method 4: Fallback - extract all meaningful paragraphs from the page
+        # Method 4: Fallback - carefully extract from main content area
         if not article_parts:
-            all_paragraphs = soup.find_all('p')
-            for p in all_paragraphs:
-                text = p.get_text(strip=True)
-                if text and len(text) > 30:
-                    article_parts.append(text)
+            # Look for main tag or content-rich divs
+            main_content = soup.find('main') or soup.find('div', id=re.compile(r'(main|content)', re.I))
+            
+            if main_content:
+                # Get title
+                title = main_content.find('h1')
+                if title:
+                    article_parts.append(title.get_text(strip=True))
                     article_parts.append('\n\n')
+                
+                # Get paragraphs from main content only
+                paragraphs = main_content.find_all('p', recursive=True)
+                for p in paragraphs:
+                    # Check if paragraph is not inside excluded sections
+                    if not any(parent.name in ['nav', 'aside', 'footer', 'header'] for parent in p.parents):
+                        text = p.get_text(strip=True)
+                        if text and len(text) > 30 and not self.is_noise_text(text):
+                            article_parts.append(text)
+                            article_parts.append('\n\n')
         
-        # Clean and join the text
-        article_text = ''.join(article_parts).strip()
+        return self.clean_text(''.join(article_parts))
+    
+    def is_noise_text(self, text):
+        """Check if text is likely UI noise rather than article content"""
+        text_lower = text.lower()
+        
+        # Common UI phrases to filter out
+        noise_phrases = [
+            'read more', 'click here', 'subscribe', 'share', 'comment',
+            'следить', 'подписаться', 'поделиться', 'комментарий',
+            'читать далее', 'показать', 'скрыть', 'загрузить',
+            'cookie', 'privacy policy', 'terms of service',
+            'все права защищены', 'copyright', '©'
+        ]
+        
+        for phrase in noise_phrases:
+            if phrase in text_lower:
+                return True
+        
+        # Filter out very short texts (likely buttons or labels)
+        if len(text) < 20:
+            return True
+        
+        # Filter out texts that are mostly links
+        if text.count('http') > 2:
+            return True
+        
+        return False
+    
+    def clean_text(self, text):
+        """Clean and format the extracted text"""
+        if not text:
+            return ""
+        
+        text = text.strip()
         
         # Remove excessive whitespace
-        article_text = re.sub(r'\n{3,}', '\n\n', article_text)
-        article_text = re.sub(r' {2,}', ' ', article_text)
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        text = re.sub(r' {2,}', ' ', text)
+        text = re.sub(r'\t+', ' ', text)
         
-        return article_text
+        # Remove lines that are just whitespace
+        lines = text.split('\n')
+        lines = [line.strip() for line in lines if line.strip()]
+        text = '\n'.join(lines)
+        
+        return text
     
     def copy_to_clipboard(self):
         """Copy the extracted text to clipboard"""

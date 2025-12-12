@@ -1,6 +1,8 @@
 # Yandex Zen Article Parser
 
-A Python GUI application for extracting article text from Yandex Zen (Дзен) articles. This application provides a user-friendly interface to parse and extract text content from Yandex Zen articles with support for macOS.
+> 🇷🇺 [Русская версия документации](README_RU.md)
+
+A Python GUI application for extracting article text from Yandex Zen (Дзен) articles. This application provides a user-friendly interface to parse and extract **clean article text only**, filtering out navigation, ads, comments, and other page elements. Fully compatible with macOS.
 
 ## Features
 
@@ -78,11 +80,20 @@ The application validates that:
 - The URL format is correct
 
 ### Article Extraction
-The parser uses multiple methods to extract article content:
-1. Searches for HTML `<article>` tags
-2. Looks for common content class names
-3. Attempts to parse JSON-LD structured data
-4. Falls back to extracting all meaningful paragraphs
+The parser uses intelligent multi-method extraction to get **only the article text**, filtering out navigation, ads, comments, and other page elements:
+
+1. **JSON-LD Structured Data** (most accurate): Extracts article body from structured metadata
+2. **Article Tag Analysis**: Precisely extracts content from HTML `<article>` elements while removing nested non-content
+3. **Zen-Specific Selectors**: Uses Yandex Zen specific CSS selectors for better accuracy
+4. **Smart Filtering**: Automatically removes:
+   - Navigation menus, headers, and footers
+   - Social sharing buttons and comments
+   - Advertisements and promotional content
+   - Related articles and sidebars
+   - Cookie notices and popups
+   - UI elements (buttons, labels, short texts)
+
+The parser includes noise detection to filter out common UI phrases in both English and Russian (e.g., "Subscribe", "Подписаться", "Read more", "Читать далее")
 
 ### Error Handling
 The application handles various error scenarios:
@@ -147,9 +158,21 @@ Potential improvements for future versions:
 - Selenium support for JavaScript-heavy pages
 - Article metadata extraction (author, date, tags)
 
+## Documentation
+
+This project includes comprehensive documentation:
+
+- **[README.md](README.md)** - Main documentation (English)
+- **[README_RU.md](README_RU.md)** - Русская документация
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide
+- **[MACOS_SETUP.md](MACOS_SETUP.md)** - macOS-specific setup instructions
+- **[EXAMPLES.md](EXAMPLES.md)** - Detailed usage examples
+- **[PARSING_DETAILS.md](PARSING_DETAILS.md)** - How the parser works
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
+
 ## License
 
-This project is provided as-is for educational and personal use.
+This project is provided under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Contributing
 
