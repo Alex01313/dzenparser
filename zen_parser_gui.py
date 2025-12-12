@@ -79,6 +79,9 @@ class ZenParserGUI:
         )
         self.url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
+        # Add context menu and keyboard shortcuts for URL entry
+        self.setup_url_entry_bindings()
+        
         # Buttons Frame
         buttons_frame = tk.Frame(main_frame, bg='#f0f0f0')
         buttons_frame.pack(fill=tk.X, pady=(0, 20))
@@ -173,6 +176,38 @@ class ZenParserGUI:
             fg='#999999'
         )
         footer_label.pack(pady=(10, 0))
+    
+    def setup_url_entry_bindings(self):
+        """Setup keyboard shortcuts and context menu for URL entry field"""
+        # Create context menu for URL entry
+        self.url_menu = tk.Menu(self.url_entry, tearoff=0)
+        self.url_menu.add_command(label="Cut", command=lambda: self.url_entry.event_generate("<<Cut>>"))
+        self.url_menu.add_command(label="Copy", command=lambda: self.url_entry.event_generate("<<Copy>>"))
+        self.url_menu.add_command(label="Paste", command=lambda: self.url_entry.event_generate("<<Paste>>"))
+        self.url_menu.add_separator()
+        self.url_menu.add_command(label="Select All", command=lambda: self.url_entry.select_range(0, tk.END))
+        
+        # Bind right-click to show context menu
+        def show_context_menu(event):
+            try:
+                self.url_menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                self.url_menu.grab_release()
+        
+        self.url_entry.bind("<Button-3>", show_context_menu)  # Right-click
+        self.url_entry.bind("<Button-2>", show_context_menu)  # Middle-click (alternative)
+        
+        # Bind keyboard shortcuts (macOS style)
+        self.url_entry.bind("<Command-v>", lambda e: self.url_entry.event_generate("<<Paste>>"))
+        self.url_entry.bind("<Command-c>", lambda e: self.url_entry.event_generate("<<Copy>>"))
+        self.url_entry.bind("<Command-x>", lambda e: self.url_entry.event_generate("<<Cut>>"))
+        self.url_entry.bind("<Command-a>", lambda e: self.url_entry.select_range(0, tk.END))
+        
+        # Also bind Control for non-Mac systems
+        self.url_entry.bind("<Control-v>", lambda e: self.url_entry.event_generate("<<Paste>>"))
+        self.url_entry.bind("<Control-c>", lambda e: self.url_entry.event_generate("<<Copy>>"))
+        self.url_entry.bind("<Control-x>", lambda e: self.url_entry.event_generate("<<Cut>>"))
+        self.url_entry.bind("<Control-a>", lambda e: self.url_entry.select_range(0, tk.END))
     
     def validate_url(self, url):
         """Validate if the URL is a valid Yandex Zen URL"""

@@ -83,10 +83,16 @@ pip install -r requirements.txt
 
 ## 🔑 Keyboard Shortcuts (macOS)
 
-- `Cmd+V` - Paste URL
-- `Cmd+C` - Copy text
+**URL Field:**
+- `Cmd+V` - Paste URL ⭐
+- `Cmd+C` - Copy URL
+- `Cmd+X` - Cut URL
 - `Cmd+A` - Select all
+- `Right-Click` - Context menu
+
+**Application:**
 - `Cmd+Q` - Quit app
+- `Cmd+W` - Close window
 
 ## 💡 Tips / Советы
 

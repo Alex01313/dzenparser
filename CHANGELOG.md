@@ -2,6 +2,20 @@
 
 All notable changes to the Yandex Zen Article Parser will be documented in this file.
 
+## [1.1.1] - 2024-12-12
+
+### Fixed
+- **Paste Functionality**: Fixed critical issue where Cmd+V and right-click paste didn't work in URL field
+  - Added explicit keyboard shortcuts for macOS (Cmd+V, Cmd+C, Cmd+X, Cmd+A)
+  - Added keyboard shortcuts for Windows/Linux (Ctrl+V, Ctrl+C, Ctrl+X, Ctrl+A)
+  - Added context menu with Cut/Copy/Paste/Select All options
+  - Right-click now shows context menu with paste option
+
+### Added
+- Context menu for URL entry field (accessible via right-click)
+- Cross-platform keyboard shortcuts support
+- `setup_url_entry_bindings()` method for proper clipboard operations
+
 ## [1.1.0] - 2024-12-12
 
 ### Added

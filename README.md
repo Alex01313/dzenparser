@@ -7,11 +7,13 @@ A Python GUI application for extracting article text from Yandex Zen (Дзен) 
 ## Features
 
 - **User-Friendly GUI**: Clean and intuitive interface built with tkinter
+- **Easy URL Input**: Paste URLs with Cmd+V or right-click context menu
 - **URL Validation**: Validates Yandex Zen URLs before parsing
 - **Article Extraction**: Extracts main article text from Yandex Zen pages
 - **Copy to Clipboard**: Easy one-click copying of extracted text
+- **Keyboard Shortcuts**: Full support for macOS (Cmd) and Windows/Linux (Ctrl) shortcuts
 - **Error Handling**: Comprehensive error handling for network issues, invalid URLs, and parsing errors
-- **macOS Compatible**: Fully tested and compatible with macOS
+- **macOS Compatible**: Fully tested and compatible with macOS (cross-platform support)
 
 ## Requirements
 
