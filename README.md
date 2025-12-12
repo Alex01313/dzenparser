@@ -67,9 +67,17 @@ chmod +x zen_parser_gui.py
 
 ### Example URLs
 
-You can test the parser with Yandex Zen article URLs like:
-- `https://zen.yandex.ru/media/...`
-- `https://dzen.ru/...`
+The parser supports all Yandex Zen / Dzen URL formats:
+
+**Short format (new):**
+- `https://dzen.ru/a/aTsmd_bGr2aapkGO`
+- `https://dzen.ru/a/[article-id]`
+
+**Long format (legacy):**
+- `https://zen.yandex.ru/media/id/[id]/[article-title]`
+- `https://dzen.ru/media/[channel]/[article-title]`
+
+All three domains are supported: `zen.yandex.ru`, `dzen.ru`, `zen.yandex.com`
 
 ## Features in Detail
 
@@ -165,6 +173,7 @@ This project includes comprehensive documentation:
 - **[README.md](README.md)** - Main documentation (English)
 - **[README_RU.md](README_RU.md)** - Русская документация
 - **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide
+- **[URL_FORMATS.md](URL_FORMATS.md)** - Supported URL formats (all formats explained)
 - **[MACOS_SETUP.md](MACOS_SETUP.md)** - macOS-specific setup instructions
 - **[EXAMPLES.md](EXAMPLES.md)** - Detailed usage examples
 - **[PARSING_DETAILS.md](PARSING_DETAILS.md)** - How the parser works

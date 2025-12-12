@@ -69,13 +69,29 @@ python3 zen_parser_gui.py
 
 ### Example URLs Format
 
-Valid Yandex Zen URLs look like:
+The parser supports all Yandex Zen / Dzen URL formats:
 
+**✅ Short format (new, recommended):**
+```
+https://dzen.ru/a/aTsmd_bGr2aapkGO
+https://dzen.ru/a/YbXz1234567890
+https://dzen.ru/a/[any-article-id]
+```
+
+**✅ Long format (legacy):**
 ```
 https://zen.yandex.ru/media/id/5f6c9e8f7d0a2a6b1c8f9a0b/title-slug-123
-https://dzen.ru/a/YbXz1234567890
-https://zen.yandex.com/media/id/123/article-456
+https://zen.yandex.ru/media/channelname/article-title
+https://dzen.ru/media/example/article-title-123456
 ```
+
+**✅ Alternative domains:**
+```
+https://zen.yandex.com/media/id/123/article-456
+http://dzen.ru/a/test123  (HTTP also works)
+```
+
+All formats are fully supported!
 
 ## Troubleshooting Examples
 

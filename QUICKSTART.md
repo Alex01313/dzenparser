@@ -20,7 +20,10 @@ That's it! The GUI will open automatically.
 - Open your browser
 - Go to https://zen.yandex.ru or https://dzen.ru
 - Find any article
-- Copy the URL (should look like: `https://zen.yandex.ru/media/...`)
+- Copy the URL
+  - Short format: `https://dzen.ru/a/aTsmd_bGr2aapkGO`
+  - Long format: `https://zen.yandex.ru/media/...`
+  - Both work! ✅
 
 ### Step 2: Parse the Article
 - Paste the URL in the "Article URL" field
