@@ -2,6 +2,26 @@
 
 All notable changes to the Yandex Zen Article Parser will be documented in this file.
 
+## [1.1.2] - 2024-12-12
+
+### Added
+- **Authentication Detection**: Parser now detects when articles require authentication
+  - Detects redirects to Yandex SSO/Passport pages
+  - Checks for suspiciously small pages (< 5KB)
+  - Identifies authentication redirect scripts
+  - Shows helpful error messages in both Russian and English
+
+### Improved
+- **Error Messages**: More informative messages when articles are inaccessible
+  - Explains possible reasons (auth required, deleted, geo-restrictions)
+  - Provides actionable suggestions
+  - Links to documentation (DZEN_AUTH_ISSUE.md)
+
+### Added
+- `check_if_auth_required()` method to detect auth pages
+- Comprehensive documentation about authentication issues (DZEN_AUTH_ISSUE.md)
+- Debug scripts for troubleshooting (debug_url.py, test_real_fetch.py)
+
 ## [1.1.1] - 2024-12-12
 
 ### Fixed

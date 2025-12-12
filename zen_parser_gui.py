@@ -225,6 +225,23 @@ class ZenParserGUI:
         except Exception as e:
             return False, f"Invalid URL format: {str(e)}"
     
+    def check_if_auth_required(self, response):
+        """Check if the article requires authentication"""
+        # Check if redirected to SSO/auth page
+        if 'sso.passport.yandex.ru' in response.url or 'passport.yandex' in response.url:
+            return True, "Redirected to Yandex authentication page"
+        
+        # Check if page is suspiciously small (likely a redirect page)
+        if len(response.content) < 5000:
+            return True, "Page too small - likely requires authentication or doesn't exist"
+        
+        # Check for auth-related content
+        content_lower = response.content.lower()
+        if b'form.submit()' in content_lower or b'sso.dzen.ru' in content_lower:
+            return True, "Page contains authentication redirect"
+        
+        return False, "OK"
+    
     def parse_article(self):
         """Parse the Yandex Zen article from the provided URL"""
         url = self.url_entry.get().strip()
@@ -247,8 +264,27 @@ class ZenParserGUI:
         
         try:
             # Fetch the article
-            response = self.session.get(url, timeout=10)
+            response = self.session.get(url, timeout=10, allow_redirects=True)
             response.raise_for_status()
+            
+            # Check if article requires authentication
+            auth_required, auth_message = self.check_if_auth_required(response)
+            if auth_required:
+                self.status_label.config(text="Authentication required", fg='#f44336')
+                error_msg = (
+                    "⚠️ Статья недоступна / Article Not Accessible\n\n"
+                    f"{auth_message}\n\n"
+                    "Возможные причины / Possible reasons:\n"
+                    "• Статья требует авторизации / Requires authentication\n"
+                    "• Статья удалена или не существует / Deleted or doesn't exist\n"
+                    "• Географические ограничения / Geo-restrictions\n\n"
+                    "Что попробовать / What to try:\n"
+                    "1. Откройте ссылку в браузере / Open in browser\n"
+                    "2. Попробуйте другую статью / Try another article\n"
+                    "3. См. DZEN_AUTH_ISSUE.md / See DZEN_AUTH_ISSUE.md"
+                )
+                messagebox.showwarning("Authentication Required", error_msg)
+                return
             
             # Parse the HTML
             soup = BeautifulSoup(response.content, 'html.parser')
