@@ -12,6 +12,18 @@ import re
 from urllib.parse import urlparse
 import sys
 
+# Try to import Selenium (optional dependency)
+try:
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    import time
+    SELENIUM_AVAILABLE = True
+except ImportError:
+    SELENIUM_AVAILABLE = False
+
 
 class ZenParserGUI:
     def __init__(self, root):
@@ -81,6 +93,25 @@ class ZenParserGUI:
         
         # Add context menu and keyboard shortcuts for URL entry
         self.setup_url_entry_bindings()
+        
+        # Selenium checkbox (if available)
+        if SELENIUM_AVAILABLE:
+            selenium_frame = tk.Frame(main_frame, bg='#f0f0f0')
+            selenium_frame.pack(fill=tk.X, pady=(5, 5))
+            
+            self.use_selenium = tk.BooleanVar(value=False)
+            selenium_check = tk.Checkbutton(
+                selenium_frame,
+                text="🚀 Use JavaScript Rendering (Selenium) - For dynamic pages",
+                variable=self.use_selenium,
+                font=('Arial', 10),
+                bg='#f0f0f0',
+                fg='#666666',
+                activebackground='#f0f0f0'
+            )
+            selenium_check.pack(side=tk.LEFT)
+        else:
+            self.use_selenium = tk.BooleanVar(value=False)
         
         # Buttons Frame
         buttons_frame = tk.Frame(main_frame, bg='#f0f0f0')
@@ -242,6 +273,60 @@ class ZenParserGUI:
         
         return False, "OK"
     
+    def parse_with_selenium(self, url):
+        """Parse article using Selenium for JavaScript rendering"""
+        driver = None
+        try:
+            # Setup Chrome options
+            chrome_options = Options()
+            chrome_options.add_argument('--headless')
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--disable-gpu')
+            chrome_options.add_argument('--window-size=1920,1080')
+            chrome_options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+            
+            # Disable images for faster loading
+            prefs = {'profile.managed_default_content_settings.images': 2}
+            chrome_options.add_experimental_option('prefs', prefs)
+            
+            # Initialize driver
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.set_page_load_timeout(30)
+            
+            # Load page
+            driver.get(url)
+            
+            # Wait for content to load
+            time.sleep(3)
+            
+            # Try to wait for article content
+            try:
+                WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.TAG_NAME, "article"))
+                )
+            except:
+                pass  # Continue anyway
+            
+            # Get page source after JavaScript execution
+            page_source = driver.page_source
+            
+            # Parse with BeautifulSoup
+            soup = BeautifulSoup(page_source, 'html.parser')
+            
+            # Extract article text
+            article_text = self.extract_article_text(soup)
+            
+            return article_text
+            
+        except Exception as e:
+            messagebox.showerror("Selenium Error", f"Failed to parse with Selenium: {str(e)}\n\nMake sure ChromeDriver is installed.")
+            return None
+            
+        finally:
+            if driver:
+                driver.quit()
+    
     def parse_article(self):
         """Parse the Yandex Zen article from the provided URL"""
         url = self.url_entry.get().strip()
@@ -263,6 +348,29 @@ class ZenParserGUI:
         self.root.update()
         
         try:
+            # Check if should use Selenium
+            if self.use_selenium.get() and SELENIUM_AVAILABLE:
+                self.status_label.config(text="Using JavaScript rendering...", fg='#2196F3')
+                self.root.update()
+                article_text = self.parse_with_selenium(url)
+                
+                if article_text:
+                    # Display the extracted text
+                    self.text_display.insert(1.0, article_text)
+                    self.status_label.config(
+                        text=f"Successfully extracted {len(article_text)} characters (via Selenium)",
+                        fg='#4CAF50'
+                    )
+                    messagebox.showinfo("Success", "Article parsed successfully using JavaScript rendering!")
+                else:
+                    self.status_label.config(text="No article content found", fg='#f44336')
+                    messagebox.showwarning(
+                        "No Content",
+                        "Could not extract article text even with JavaScript rendering. The article might be unavailable."
+                    )
+                return
+            
+            # Regular parsing (no Selenium)
             # Fetch the article
             response = self.session.get(url, timeout=10, allow_redirects=True)
             response.raise_for_status()
@@ -271,17 +379,25 @@ class ZenParserGUI:
             auth_required, auth_message = self.check_if_auth_required(response)
             if auth_required:
                 self.status_label.config(text="Authentication required", fg='#f44336')
+                
+                # Suggest using Selenium if available
+                selenium_suggestion = ""
+                if SELENIUM_AVAILABLE:
+                    selenium_suggestion = "\n\n💡 Try enabling 'Use JavaScript Rendering' checkbox above!"
+                
                 error_msg = (
                     "⚠️ Статья недоступна / Article Not Accessible\n\n"
                     f"{auth_message}\n\n"
                     "Возможные причины / Possible reasons:\n"
+                    "• Требуется JavaScript / Needs JavaScript rendering\n"
                     "• Статья требует авторизации / Requires authentication\n"
                     "• Статья удалена или не существует / Deleted or doesn't exist\n"
                     "• Географические ограничения / Geo-restrictions\n\n"
                     "Что попробовать / What to try:\n"
-                    "1. Откройте ссылку в браузере / Open in browser\n"
-                    "2. Попробуйте другую статью / Try another article\n"
-                    "3. См. DZEN_AUTH_ISSUE.md / See DZEN_AUTH_ISSUE.md"
+                    "1. ✅ Включите 'Use JavaScript Rendering' / Enable JavaScript rendering\n"
+                    "2. Откройте ссылку в браузере / Open in browser\n"
+                    "3. Попробуйте другую статью / Try another article"
+                    f"{selenium_suggestion}"
                 )
                 messagebox.showwarning("Authentication Required", error_msg)
                 return

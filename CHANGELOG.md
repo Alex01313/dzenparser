@@ -4,6 +4,19 @@ All notable changes to the Yandex Zen Article Parser will be documented in this 
 
 ## [1.1.2] - 2024-12-12
 
+### Added - MAJOR FEATURE! 🚀
+- **Selenium Support**: Parser can now handle JavaScript-rendered pages!
+  - Added optional Selenium integration for dynamic content
+  - GUI checkbox to enable/disable JavaScript rendering
+  - Automatic ChromeDriver setup with optimized options
+  - Headless browser mode for background processing
+  - Fallback to regular parsing if Selenium not available
+
+- **JavaScript Rendering Checkbox**: 
+  - Toggle "Use JavaScript Rendering (Selenium)" in GUI
+  - Only appears if Selenium is installed
+  - Automatically suggests enabling when auth errors occur
+
 ### Added
 - **Authentication Detection**: Parser now detects when articles require authentication
   - Detects redirects to Yandex SSO/Passport pages
@@ -13,14 +26,17 @@ All notable changes to the Yandex Zen Article Parser will be documented in this 
 
 ### Improved
 - **Error Messages**: More informative messages when articles are inaccessible
-  - Explains possible reasons (auth required, deleted, geo-restrictions)
-  - Provides actionable suggestions
-  - Links to documentation (DZEN_AUTH_ISSUE.md)
+  - Explains possible reasons (auth required, deleted, geo-restrictions, needs JavaScript)
+  - Provides actionable suggestions including Selenium option
+  - Links to documentation (DZEN_AUTH_ISSUE.md, SELENIUM_SETUP.md)
 
-### Added
+### Added Files
+- `parse_with_selenium()` method for JavaScript rendering
+- `zen_parser_selenium.py` - Standalone Selenium parser
+- Comprehensive Selenium setup guide (SELENIUM_SETUP.md)
 - `check_if_auth_required()` method to detect auth pages
-- Comprehensive documentation about authentication issues (DZEN_AUTH_ISSUE.md)
 - Debug scripts for troubleshooting (debug_url.py, test_real_fetch.py)
+- Updated requirements.txt with `selenium>=4.15.0`
 
 ## [1.1.1] - 2024-12-12
 
